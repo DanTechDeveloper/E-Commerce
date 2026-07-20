@@ -1,48 +1,59 @@
 # E-Commerce — Laravel + Inertia React SPA
 
 ## Stack
-- Laravel 13 + PHP 8.3+
-- Inertia.js v3 (React 19), Vite 8, Tailwind CSS v4 (@tailwindcss/vite plugin)
-- shadcn/ui (new-york style, **JSX only** — `tsx: false`), icons: lucide-react
-- SQLite by default (dev + test), database session/cache/queue drivers
+- Laravel 13 + PHP 8.3+, Inertia.js v3 (React 19), Vite 8
+- Tailwind CSS v4 (`@tailwindcss/vite` plugin), shadcn/ui (new-york style, JSX)
+- SQLite (dev + test), database session/cache/queue
+- `@/` alias → `resources/js/`
 
 ## Commands
-| Command | What it does |
+| Command | Notes |
 |---|---|
-| `composer setup` | Full bootstrap: `composer install`, copy `.env`, `key:generate`, `migrate`, `npm install --ignore-scripts`, `npm run build` |
-| `composer dev` | Runs 4 processes concurrently: `php artisan serve`, `queue:listen`, `pail` (logs), `vite` |
+| `composer setup` | Full bootstrap: install, `.env`, `key:generate`, `migrate`, `npm i --ignore-scripts`, `npm run build` |
+| `composer dev` | 4 concurrent: `php artisan serve`, `queue:listen`, `pail` (logs), `vite` |
 | `composer test` | `config:clear` then `php artisan test` |
-| `npm run dev` | Vite dev server only |
+| `npm run dev` | Vite dev only |
 | `npm run build` | Vite production build |
 
-**`.npmrc` sets `ignore-scripts=true`** — postinstall scripts won't run unless you pass `--ignore-scripts=false`.
+**`.npmrc` has `ignore-scripts=true`** — postinstall scripts need `--ignore-scripts=false`.
 
-## Key architecture
-- **PHP routes** in `routes/web.php` — three groups: public (guest), auth (login/register), admin (auth middleware).
-- **Inertia pages** live in `resources/js/Pages/{Name}.jsx` — resolved automatically from controller `Inertia::render('PublicView/Dashboard')`.
-- **Shared props** via `HandleInertiaRequests.php` — only `auth.user` fields: `id`, `name`, `email`.
-- **Admin** checks `user->role === 'admin'` for redirect (no explicit admin middleware — role check is in `AuthController`).
-- **Cart** is client-side only — stored in `localStorage` key `fragrance_cart` (see `resources/js/hooks/useCart.js`). Cross-tab sync via `storage` event.
-- `app/Actions/` directory exists but is empty.
+## Routes (`routes/web.php`)
+- **Public (guest):** `/`, `/cart`, `/fragrances/{id}` (explicit `whereNumber`)
+- **Auth (guest):** `/login`, `/register`
+- **Auth (logged-in):** `/admin/*`, `/cart/*`, `/orders`, `/checkout`
+- **Logout:** `POST /logout` (auth middleware)
+
+No explicit admin middleware — role check (`user->role === 'admin'`) is in `AuthController` only (redirect after login/register).
+
+## Cart architecture (critical detail)
+- **Guest:** Cart stored in `localStorage` key `fragrance_cart`, cross-tab synced via `storage` event.
+- **Logged in:** Cart fetched from `GET /cart/items` on mount. All mutations (`addToCart`, `updateQty`, `removeItem`, `clearCart`) call `fetch()` to server endpoints — **not** Inertia's `router.post()` (endpoints return JSON, not Inertia responses).
+- **CSRF token** is in `<meta name="csrf-token">` (`resources/views/app.blade.php`). All `fetch()` calls read it via `document.querySelector('meta[name="csrf-token"]')?.content`.
+- `POST /cart/sync` **replaces all items** (deletes all + re-inserts). Used by `addToCart` and `updateQty`.
+- `POST /cart/remove` deletes a single `CartItem` by `product_id`.
+- `POST /cart/clear` deletes all `CartItem` for the user.
+- Login/register merges client cart to server via `request->input('cart')`.
+
+## Admin
+- `AdminController` uses implicit route model binding on `Product $product`.
+- Routes: product CRUD, order listing/update.
+
+## Shared props (`HandleInertiaRequests.php`)
+Only `auth.user` → `{ id, name, email }`.
 
 ## JS conventions
-- `@/` alias → `resources/js/`
-- `cn()` for class merging in `@/lib/utils.js` (clsx + tailwind-merge)
-- `currency()` helper in `@/data/fragrances.js` — formats as PHP (₱)
-- Components in `@/components/ui/` are shadcn/ui generated (JSX, not TSX)
-- Tailwind v4: no `tailwind.config.js` — CSS variables in `@theme inline`, custom dark variant via `@custom-variant dark`.
+- `cn()` in `@/lib/utils.js` (clsx + tailwind-merge)
+- `currency()` in `@/data/fragrances.js` — formats as PHP (₱)
+- Tailwind v4: no `tailwind.config.js` — `@theme inline` CSS vars, `@custom-variant dark`.
 
 ## Testing
-- **SQLite `:memory:`** in testing (phpunit.xml). No external DB needed.
-- Tests use PHPUnit 12. Suites: `tests/Unit`, `tests/Feature`. Standard `RefreshDatabase` pattern expected.
-- Run single test: `php artisan test --filter=TestName` or `vendor/bin/phpunit tests/Feature/FooTest.php`.
+- SQLite `:memory:` (phpunit.xml), no external DB.
+- PHPUnit 12. Suites: `tests/Unit`, `tests/Feature`. Standard `RefreshDatabase` pattern.
+- Single test: `php artisan test --filter=TestName` or `vendor/bin/phpunit tests/Feature/FooTest.php`.
+- **No `ProductFactory`** exists — only `UserFactory`.
+- Seeders: `AdminDatabaseSeeder` (admin: dancedreck456@gmail.com / 1234), `UserDatabaseSeeder` (3 users, password: password).
 
-## DB / migrations
-- Default DB: `database/database.sqlite` (file-based). `DB_CONNECTION=sqlite` in `.env`.
-- Migrations in `database/migrations/` — includes users, cache, jobs, products. Product has `user_id` FK and `quantity` field.
-- Factories: `database/factories/UserFactory.php` only. No ProductFactory yet.
-- Seeders: `AdminDatabaseSeeder`, `UserDatabaseSeeder`.
-
-## Route model binding
-- `AdminController` uses implicit binding on `Product $product`.
-- Public routes: `fragrances/{id}` uses explicit `whereNumber`.
+## Missing / incomplete
+- `OrderController` is referenced in routes but **does not exist** yet.
+- `app/Actions/` directory exists but is empty.
+- No ProductFactory — create one if tests need products.

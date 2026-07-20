@@ -35,7 +35,7 @@ class CartController extends Controller
 
         $user = auth()->user();
 
-        CartItem::where('user_id', $user->id)->delete();
+    CartItem::where('user_id', $user->id)->delete();
 
         foreach ($items['items'] as $item) {
             CartItem::create([
