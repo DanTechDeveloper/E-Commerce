@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -62,6 +63,24 @@ class AdminController extends Controller
     public function destroyProduct(Product $product)
     {
         $product->delete();
+
+        return redirect()->back();
+    }
+
+    public function orders()
+    {
+        return Inertia::render('Admin/Orders', [
+            'orders' => Order::with('user')->latest()->get(),
+        ]);
+    }
+
+    public function updateOrder(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:preparing,shipped,in_transit,delivered'],
+        ]);
+
+        $order->update($validated);
 
         return redirect()->back();
     }

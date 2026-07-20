@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PublicView;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
 
 Route::get('/', [PublicView::class, 'index']);
 Route::get('/cart', [PublicView::class, 'cart']);
@@ -23,6 +25,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/admin/products', [AdminController::class, 'storeProduct']);
     Route::put('/admin/products/{product}', [AdminController::class, 'updateProduct']);
     Route::delete('/admin/products/{product}', [AdminController::class, 'destroyProduct']);
+    Route::get('/admin/orders', [AdminController::class, 'orders']);
+    Route::put('/admin/orders/{order}', [AdminController::class, 'updateOrder']);
+
+    Route::get('/cart/items', [CartController::class, 'index']);
+    Route::post('/cart/sync', [CartController::class, 'sync']);
+    Route::post('/cart/clear', [CartController::class, 'clear']);
+
+    Route::post('/orders', [OrderController::class, 'store']);
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{id}', [OrderController::class, 'show']);
 });
 
 Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->name('logout');

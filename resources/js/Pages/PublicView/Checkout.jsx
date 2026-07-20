@@ -14,7 +14,7 @@ const PAYMENT_METHODS = [
 ];
 
 export default function Checkout() {
-    const { cart, cartCount, cartTotal, clearCart } = useCart();
+    const { cart, cartCount, cartTotal } = useCart();
     const { auth } = usePage().props;
     const [submitting, setSubmitting] = useState(false);
 
@@ -56,10 +56,6 @@ export default function Checkout() {
             items: cart.map((item) => ({ id: item.id, qty: item.qty, price: item.price })),
             total: cartTotal,
         }, {
-            onSuccess: () => {
-                clearCart();
-                router.visit('/orders');
-            },
             onError: (errs) => {
                 setErrors(errs);
                 setSubmitting(false);

@@ -23,11 +23,15 @@ export default function Register() {
         password: '',
         password_confirmation: '',
         redirect,
+        cart: [],
     });
 
     function submit(e) {
         e.preventDefault();
+        const cart = JSON.parse(localStorage.getItem('fragrance_cart') || '[]');
+        setData('cart', cart);
         post('/register', {
+            onSuccess: () => localStorage.removeItem('fragrance_cart'),
             onFinish: () => reset('password', 'password_confirmation'),
         });
     }

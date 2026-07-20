@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, usePage, useForm } from '@inertiajs/react';
-import { LayoutDashboard, ShoppingBag, Users, Settings, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, Users, Settings, LogOut, Menu, X } from 'lucide-react';
 
 export default function AdminLayout({ children }) {
     const { auth } = usePage().props;
@@ -16,6 +16,7 @@ export default function AdminLayout({ children }) {
     const navItems = [
         { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/admin/products', label: 'Products', icon: ShoppingBag },
+        { href: '/admin/orders', label: 'Orders', icon: Package },
         { href: '/admin/users', label: 'Users', icon: Users },
         { href: '/admin/settings', label: 'Settings', icon: Settings },
     ];

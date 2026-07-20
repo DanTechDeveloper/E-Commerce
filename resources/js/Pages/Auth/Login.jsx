@@ -22,11 +22,15 @@ export default function Login() {
         password: '',
         remember: false,
         redirect,
+        cart: [],
     });
 
     function submit(e) {
         e.preventDefault();
+        const cart = JSON.parse(localStorage.getItem('fragrance_cart') || '[]');
+        setData('cart', cart);
         post('/login', {
+            onSuccess: () => localStorage.removeItem('fragrance_cart'),
             onFinish: () => reset('password'),
         });
     }

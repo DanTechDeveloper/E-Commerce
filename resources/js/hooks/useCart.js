@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { usePage, router } from '@inertiajs/react';
 
 const STORAGE_KEY = 'fragrance_cart';
 
@@ -12,26 +13,48 @@ function readCart() {
     }
 }
 
-export function useCart() {
-    const [cart, setCart] = useState(readCart);
+function syncToDb(cart) {
+    router.post('/cart/sync', { items: cart.map((i) => ({ id: i.id, qty: i.qty })) }, {
+        preserveState: true,
+        preserveScroll: true,
+    });
+}
 
-    // Persist on change
+export function useCart() {
+    const { auth } = usePage().props;
+    const isLoggedIn = !!auth?.user;
+
+    const [cart, setCart] = useState(isLoggedIn ? [] : readCart);
+    const [loaded, setLoaded] = useState(false);
+
     useEffect(() => {
+        if (!isLoggedIn) {
+            setLoaded(true);
+            return;
+        }
+        fetch('/cart/items')
+            .then((res) => res.json())
+            .then((data) => {
+                setCart(data);
+                setLoaded(true);
+            });
+    }, [isLoggedIn]);
+
+    useEffect(() => {
+        if (isLoggedIn || !loaded) return;
         try {
             window.localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
-        } catch {
-            /* ignore */
-        }
-    }, [cart]);
+        } catch { /* ignore */ }
+    }, [cart, isLoggedIn, loaded]);
 
-    // Sync across tabs / other page instances
     useEffect(() => {
+        if (isLoggedIn) return;
         const onStorage = (e) => {
             if (e.key === STORAGE_KEY) setCart(readCart());
         };
         window.addEventListener('storage', onStorage);
         return () => window.removeEventListener('storage', onStorage);
-    }, []);
+    }, [isLoggedIn]);
 
     const addToCart = useCallback((fragrance, qty = 1) => {
         setCart((prev) => {
@@ -41,34 +64,55 @@ export function useCart() {
 
             if (currentQty + qty > maxStock) return prev;
 
-            if (existing) {
-                return prev.map((item) =>
-                    item.id === fragrance.id
-                        ? { ...item, qty: item.qty + qty }
-                        : item
-                );
-            }
-            return [...prev, { ...fragrance, qty }];
+            const next = existing
+                ? prev.map((item) =>
+                      item.id === fragrance.id
+                          ? { ...item, qty: item.qty + qty }
+                          : item
+                  )
+                : [...prev, { ...fragrance, qty }];
+
+            if (isLoggedIn) syncToDb(next);
+            return next;
         });
-    }, []);
+    }, [isLoggedIn]);
 
     const updateQty = useCallback((id, delta) => {
-        setCart((prev) =>
-            prev
+        setCart((prev) => {
+            const next = prev
                 .map((item) => {
                     const newQty = item.qty + delta;
                     if (newQty > item.quantity) return item;
                     return { ...item, qty: newQty };
                 })
-                .filter((item) => item.qty > 0)
-        );
-    }, []);
+                .filter((item) => item.qty > 0);
+
+            if (isLoggedIn) syncToDb(next);
+            return next;
+        });
+    }, [isLoggedIn]);
 
     const removeItem = useCallback((id) => {
-        setCart((prev) => prev.filter((item) => item.id !== id));
-    }, []);
+        setCart((prev) => {
+            const next = prev.filter((item) => item.id !== id);
+            if (isLoggedIn) syncToDb(next);
+            return next;
+        });
+    }, [isLoggedIn]);
 
-    const clearCart = useCallback(() => setCart([]), []);
+    const clearCart = useCallback(() => {
+        setCart([]);
+        if (isLoggedIn) {
+            router.post('/cart/clear', {}, {
+                preserveState: true,
+                preserveScroll: true,
+            });
+        } else {
+            try {
+                window.localStorage.removeItem(STORAGE_KEY);
+            } catch { /* ignore */ }
+        }
+    }, [isLoggedIn]);
 
     const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
     const cartTotal = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
@@ -81,5 +125,6 @@ export function useCart() {
         updateQty,
         removeItem,
         clearCart,
+        loaded,
     };
 }

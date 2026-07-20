@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use App\Models\User;
+use App\Models\CartItem;
 use Inertia\Inertia;
 
 class AuthController extends Controller
@@ -32,6 +33,15 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         $user = Auth::user();
+
+        $cart = $request->input('cart', []);
+
+        foreach ($cart as $item) {
+            CartItem::updateOrCreate(
+                ['user_id' => $user->id, 'product_id' => $item['id']],
+                ['quantity' => $item['qty'] ?? 1]
+            );
+        }
 
         $redirect = $request->input('redirect', '/');
 
@@ -62,6 +72,15 @@ class AuthController extends Controller
         ]);
 
         Auth::login($user);
+
+        $cart = $request->input('cart', []);
+
+        foreach ($cart as $item) {
+            CartItem::updateOrCreate(
+                ['user_id' => $user->id, 'product_id' => $item['id']],
+                ['quantity' => $item['qty'] ?? 1]
+            );
+        }
 
         if ($user->role === 'admin') {
             return redirect('/admin');
