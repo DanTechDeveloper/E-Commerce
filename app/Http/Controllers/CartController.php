@@ -48,6 +48,17 @@ class CartController extends Controller
         return response()->json(['message' => 'Cart synced']);
     }
 
+    public function destroy(Request $request)
+    {
+        $request->validate(['id' => 'required|exists:products,id']);
+
+        CartItem::where('user_id', auth()->id())
+            ->where('product_id', $request->id)
+            ->delete();
+
+        return response()->json(['message' => 'Item removed']);
+    }
+
     public function clear()
     {
         CartItem::where('user_id', auth()->id())->delete();

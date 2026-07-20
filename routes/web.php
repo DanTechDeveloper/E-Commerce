@@ -9,7 +9,6 @@ use App\Http\Controllers\OrderController;
 
 Route::get('/', [PublicView::class, 'index']);
 Route::get('/cart', [PublicView::class, 'cart']);
-Route::get('/checkout', [PublicView::class, 'checkout']);
 Route::get('/fragrances/{id}', [PublicView::class, 'show'])->whereNumber('id');
 
 Route::middleware('guest')->group(function () {
@@ -30,11 +29,14 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/cart/items', [CartController::class, 'index']);
     Route::post('/cart/sync', [CartController::class, 'sync']);
+    Route::post('/cart/remove', [CartController::class, 'destroy']);
     Route::post('/cart/clear', [CartController::class, 'clear']);
 
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::get('/checkout', [PublicView::class, 'checkout']);
+
 });
 
 Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->name('logout');

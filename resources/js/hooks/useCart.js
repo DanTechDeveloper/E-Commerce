@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { usePage, router } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 
 const STORAGE_KEY = 'fragrance_cart';
 
@@ -14,9 +14,10 @@ function readCart() {
 }
 
 function syncToDb(cart) {
-    router.post('/cart/sync', { items: cart.map((i) => ({ id: i.id, qty: i.qty })) }, {
-        preserveState: true,
-        preserveScroll: true,
+    fetch('/cart/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
+        body: JSON.stringify({ items: cart.map((i) => ({ id: i.id, qty: i.qty })) }),
     });
 }
 
@@ -95,7 +96,13 @@ export function useCart() {
     const removeItem = useCallback((id) => {
         setCart((prev) => {
             const next = prev.filter((item) => item.id !== id);
-            if (isLoggedIn) syncToDb(next);
+            if (isLoggedIn) {
+                fetch('/cart/remove', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
+                    body: JSON.stringify({ id }),
+                });
+            }
             return next;
         });
     }, [isLoggedIn]);
@@ -103,9 +110,9 @@ export function useCart() {
     const clearCart = useCallback(() => {
         setCart([]);
         if (isLoggedIn) {
-            router.post('/cart/clear', {}, {
-                preserveState: true,
-                preserveScroll: true,
+            fetch('/cart/clear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
             });
         } else {
             try {
