@@ -38,6 +38,11 @@ export default function Dashboard({ products }) {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {usePage().props.auth?.user && (
+                            <Button variant="outline" size="sm" asChild>
+                                <Link href="/orders">My Purchases</Link>
+                            </Button>
+                        )}
                         <div className="relative hidden sm:block">
                             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
                             <Input
