@@ -82,6 +82,7 @@ export function useCart() {
         setCart((prev) => {
             const next = prev
                 .map((item) => {
+                    if (item.id !== id) return item;
                     const newQty = item.qty + delta;
                     if (newQty > item.quantity) return item;
                     return { ...item, qty: newQty };

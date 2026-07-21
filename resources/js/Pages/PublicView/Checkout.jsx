@@ -53,7 +53,7 @@ export default function Checkout() {
 
         router.post('/orders', {
             ...form,
-            items: cart.map((item) => ({ id: item.id, qty: item.qty, price: item.price })),
+            items: cart,
             total: cartTotal,
         }, {
             onError: (errs) => {
