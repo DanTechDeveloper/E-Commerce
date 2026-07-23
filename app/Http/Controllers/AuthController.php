@@ -46,10 +46,10 @@ class AuthController extends Controller
         $redirect = $request->input('redirect', '/');
 
         if ($user->role === 'admin') {
-            return redirect('/admin');
+            return redirect()->to('/admin');
         }
 
-        return redirect($redirect);
+        return redirect()->to($redirect);
     }
 
     public function createRegister()
@@ -83,12 +83,12 @@ class AuthController extends Controller
         }
 
         if ($user->role === 'admin') {
-            return redirect('/admin');
+            return redirect()->to('/admin');
         }
 
         $redirect = $request->input('redirect', '/');
 
-        return redirect($redirect);
+        return redirect()->to($redirect);
     }
 
     public function destroy(Request $request)
@@ -98,6 +98,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect()->to('/');
     }
 }

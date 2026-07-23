@@ -35,6 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
     Route::get('/checkout', [PublicView::class, 'checkout']);
 
 });

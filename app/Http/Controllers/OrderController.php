@@ -58,4 +58,15 @@ class OrderController extends Controller
             'order' => $order,
         ]);
     }
+
+    public function cancel(Order $order)
+    {
+        if ($order->user_id !== auth()->id() || $order->status !== 'preparing') {
+            return back()->withErrors(['order' => 'Order cannot be cancelled.']);
+        }
+
+        $order->update(['status' => 'cancelled']);
+
+        return redirect('/orders')->with('flash', ['success' => 'Order cancelled.']);
+    }
 }
